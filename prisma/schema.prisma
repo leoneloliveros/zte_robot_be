@@ -1,0 +1,34 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserHFCPetition {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  type        String   @db.VarChar(255)
+  phone       Int
+  email       String   @db.VarChar(255)
+  status      String
+  ontSerial   String   @db.VarChar(255)
+  Mac         String   @db.VarChar(255)
+  olt         String   @db.VarChar(255)
+  imageURL    String   @db.VarChar(255)  
+}
+
+model Olt {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String   @db.VarChar(255) @unique
+  ipAddress   String   @db.VarChar(255)
+  status      String
+}
