@@ -92,7 +92,7 @@ const uploadImageToMinio = async (imagePath) => {
 export async function getPortInformation(data) {
   try {
     // get IP address from olt database
-    const olt = await getOltByName(data.name);
+    const olt = await getOlt({ name: data.name });
     if (olt) {
       const sshSession = await executeSSHCommand(sshPublicConfig, `ssh ec640d@${olt.ipAddress}`);
 

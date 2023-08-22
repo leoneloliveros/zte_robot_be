@@ -8,7 +8,8 @@
     "start": "node dist/app.js",
     "dev": "nodemon src/app.js",
     "build": "tsc",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "seed": "node prisma/seed.js"
   },
   "keywords": [],
   "author": "",

@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 export async function getAllOlt() {
   const olts = await prisma.olt.findMany({
     select: {
-      id: false,
+      id: true,
       name: true,
       ipAddress: true,
       status: true,
@@ -23,22 +23,18 @@ export async function createOlt(data) {
   return olt;
 }
 
-export async function getOltByName(name) {
+export async function getOlt(where) {
 
   const olt = await prisma.olt.findUnique({
-    where: {
-      name
-    }
+    where,
   });
 
   return olt;
 }
 
-export async function deleteOlt(name) {
+export async function deleteOlt(where) {
   const olt = await prisma.olt.delete({
-    where: {
-      name,
-    },
+    where,
   });
 
   return olt;

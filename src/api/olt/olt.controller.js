@@ -2,7 +2,7 @@ import {
   createOlt,
   deleteOlt,
   getAllOlt,
-  getOltByName,
+  getOlt,
   updateOlt,
 } from './olt.service.js';
 
@@ -13,45 +13,95 @@ export async function getAllOltHandler(req, res) {
 }
 
 export async function createOltHandler(req, res) {
-  const data = req.body;
-  const olt = await createOlt(data);
+  try {
+    const data = req.body;
+    const olt = await createOlt(data);
 
-  return res.json(olt);
+    return res.json(olt);
+  } catch(err) {
+    console.log("🚀 ~ file: olt.controller.js:120 ~ createOltHandler ~ err", err)
+    return res.status(500).json({
+      message: `Error creating Olt: ${err.message}`,
+    });
+  }
+  
 }
 
 export async function getOltByNameHandler(req, res) {
-  const { name } = req.params
+  try {
+    const { name } = req.params
 
-  const olt = await getOltByName(name);
+    const olt = await getOlt({ name });
 
-  if (!olt) {
-    return res.status(404).json({
-      message: 'Olt not found',
+    if (!olt) {
+      return res.status(404).json({
+        message: 'Olt not found',
+      });
+    }
+
+    return res.json(olt);
+  } catch(err) {
+    console.log("🚀 ~ file: olt.controller.js:120 ~ createOltHandler ~ err", err)
+    return res.status(500).json({
+      message: `Error getting Olt: ${err.message}`,
     });
-  }
 
-  return res.json(olt);
+  }
 }
 
 export async function deleteOltHandler(req, res) {
-  const { name } = req.olt
+  try {
+    const { name } = req.params
 
-  const olt = await getOltByName(name);
+    const olt = await getOlt({ name });
 
-  if (!olt) {
-    return res.status(404).json({
-      message: 'Olt not found',
+    if (!olt) {
+      return res.status(404).json({
+        message: 'Olt not found',
+      });
+    }
+
+    await deleteOlt({ name });
+
+    return res.json(olt);
+  } catch(err) {
+    console.log("🚀 ~ file: olt.controller.js:120 ~ createOltHandler ~ err", err)
+    return res.status(500).json({
+      message: `Error deleting Olt: ${err.message}`,
     });
   }
-
-  await deleteOlt(id);
-
-  return res.json(olt);
+  
 }
 
+
+export async function deleteOltIdHandler(req, res) {
+  try {
+    const { id } = req.params
+
+    const olt = await getOlt({ id: parseInt(id) });
+
+    if (!olt) {
+      return res.status(404).json({
+        message: 'Olt not found',
+      });
+    }
+
+    await deleteOlt({ id: parseInt(id) });
+
+    return res.json(olt);
+  } catch(err) {
+    console.log("🚀 ~ file: olt.controller.js:120 ~ createOltHandler ~ err", err)
+    return res.status(500).json({
+      message: `Error deleting Olt: ${err.message}`,
+    });
+  }
+  
+}
 export async function updateOltHandler(req, res) {
 
-  const { olt } = req.body
+  const { name } = req.body
+
+  const olt = await getOlt({ name });
 
   if (!olt) {
     return res.status(404).json({
@@ -59,8 +109,8 @@ export async function updateOltHandler(req, res) {
     });
   }
 
-  await updateOlt(olt);
+  const updated = await updateOlt(req.body);
 
-  return res.json(olt);
+  return res.json(updated);
 
 }

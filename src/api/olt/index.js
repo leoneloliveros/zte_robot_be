@@ -3,6 +3,7 @@ import { Router } from 'express';
 import {
   createOltHandler,
   deleteOltHandler,
+  deleteOltIdHandler,
   getAllOltHandler,
   getOltByNameHandler,
   updateOltHandler,
@@ -18,12 +19,13 @@ router.get('/', getAllOltHandler);
 router.post('/', createOltHandler);
 
 // /api/olts/single -> GET
-router.get('/single', getOltByNameHandler);
+router.get('/:name', getOltByNameHandler);
 
 // /api/olts/ -> DELETE
-router.delete('/', deleteOltHandler);
+router.delete('/:name', deleteOltHandler);
+router.delete('/id/:id', deleteOltIdHandler);
 
 // /api/olts/ -> PATCH
-router.patch('/', updateOltHandler);
+router.put('/', updateOltHandler);
 
 export default router;
