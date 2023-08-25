@@ -1,18 +1,29 @@
 import fs from 'fs';
 import ssh2 from 'ssh2';
 import textToImage from 'text-to-image';
-import axios from 'axios';
 import { env } from 'process';
+import * as Minio from 'minio';
+import { PrismaClient } from '@prisma/client';
 
+const prisma = new PrismaClient();
 import {
   getOlt,
 } from '../olt/olt.service.js';
 
 // Cambia estos valores según tu configuración de Minio
-const minioEndpoint = 'https://minio.example.com';
+const minioEndpoint = env.MINIO_ENDPOINT;
 const accessKey = env.MINIO_ACCESS_KEY;
 const secretKey = env.MINIO_SECRET_KEY;
 const bucketName = 'cable-hfc';
+
+const minioClient = new Minio.Client({
+  endPoint: minioEndpoint,
+  port: 9000,
+  useSSL: true,
+  accessKey,
+  secretKey,
+  rejectUnauthorized: false,
+});
 
 const sshPrivateConfig = {
   host: env.PRIVATE_IP_OLT_SSH,
@@ -132,69 +143,26 @@ const convertTextToImage = async (text, imagePath) => {
   }
 };
 
-
-
-
-const uploadImageToMinio = async (imagePath) => {
-  const formData = new FormData();
-  formData.append('file', fs.createReadStream(imagePath));
-
-  const response = await axios.post(`${minioEndpoint}/${bucketName}`, formData, {
-    auth: {
-      username: accessKey,
-      password: secretKey,
-    },
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-
-  return response.data.location; // This is the public URL of the uploaded file
+const uploadImageToMinio = async (imagePath, fileName) => {
+  const fileContent = fs.readFileSync(imagePath);
+  const metaData = {
+        'Content-type': 'image/png',
+    }
+  try {
+    const result = await minioClient.putObject(bucketName, fileName, fileContent, metaData);
+    console.log("Image uploaded to MinIO:",` ${env.MINIO_ENDPOINT}:${env.MINIO_PORT}/${bucketName}/${fileName} `);
+    return {
+      path: `/${bucketName}/${fileName}`,
+      ...result
+    }; // This is the public URL of the uploaded file
+  } catch (error) {
+    console.error("Error uploading image to MinIO:", error);
+    throw error;
+  }
 };
 
-// const AWS = require('aws-sdk');
-// const fs = require('fs');
-
-// // Configure AWS with your MinIO credentials
-// const s3 = new AWS.S3({
-//   endpoint: minioEndpoint,
-//   accessKeyId: accessKey,
-//   secretAccessKey: secretKey,
-//   signatureVersion: 'v4', // MinIO requires v4 signature
-//   s3ForcePathStyle: true, // Required for MinIO
-// });
-
-// const uploadImageToMinio = async (imagePath) => {
-//   const fileContent = fs.readFileSync(imagePath);
-
-//   const uploadParams = {
-//     Bucket: bucketName,
-//     Key: 'path/to/your/desired/filename.png', // Set your desired object key
-//     Body: fileContent,
-//     ContentType: 'image/png', // Set the content type of the uploaded file
-//   };
-
-//   try {
-//     const result = await s3.upload(uploadParams).promise();
-//     console.log("Image uploaded to MinIO:", result.Location);
-//     return result.Location; // This is the public URL of the uploaded file
-//   } catch (error) {
-//     console.error("Error uploading image to MinIO:", error);
-//     throw error;
-//   }
-// };
-
-// //Call the function with the image path
-// uploadImageToMinio('path/to/your/local/image.png')
-//   .then((location) => {
-//     console.log("Public URL of uploaded image:", location);
-//   })
-//   .catch((error) => {
-//     console.error("Error:", error);
-//   });
-
-
 export async function getPortInformation(data) {
+  console.log("🚀 ~ file: automation.service.js:165 ~ getPortInformation ~ new data:", data)
   try {
     // get IP address from olt database
     const olt = await getOlt({ name: data.olt });
@@ -212,25 +180,31 @@ export async function getPortInformation(data) {
     //   // Crear una imagen con el resultado del segundo comando
     await convertTextToImage(commands_first, `./uploads/${data.olt}.png`);
 
-    // const uploadedURL = await uploadImageToMinio(`${data.olt}.png`);
+    // const uploadedURL = await uploadImageToMinio(`./uploads/${data.olt}.png`, `${data.olt}.png`);
 
-    //   // Eliminar la imagen creada
-    //  fs.unlinkSync(`${data.olt}.png`);
+      // Eliminar la imagen creada
+     fs.unlinkSync(`./uploads/${data.olt}.png`);
 
     //   // Guardar el registro en UserHFCPetition
-    //   const userHFCPetition = await prisma.userHFCPetition.create({
-    //     ...data,
-    //     imageURL: uploadedURL,
-    //   });
+      console.log(data)
+      const userHFCPetition = await prisma.userHFCPetition.create({
+        data: {
+          ...data,
+          phone: 12233,
+          type: 'portInformation',
+          status: 'pending',
+          email: 'na',
+          imageURL: `./uploads/${data.olt}.png`,
+        }
+      });
 
 
 
-    //   return {
-    //     data: userHFCPetition,
-    //   }
+      return {data: `https://${env.MINIO_ENDPOINT}:${env.MINIO_PORT}${'/cable-hfc/ZAC-BAR.SOLEDAD-CP1.png'}`}
 
     }
   } catch (error) {
     console.error('Error:', error);
   }
 }
+
